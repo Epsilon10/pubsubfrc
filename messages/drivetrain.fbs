@@ -1,0 +1,16 @@
+// test message for drivetrain
+
+namespace Robot.Drivetrain;
+
+struct Pose2D {
+    x:double;
+    y:double;
+    heading:double;
+}
+
+table DrivetrainStatus {
+    pos:Pose2D;
+    velocity:Pose2D;
+}
+
+root_type DrivetrainStatus;
