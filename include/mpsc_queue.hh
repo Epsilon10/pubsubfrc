@@ -16,19 +16,22 @@ class MpscQueue {
         cond_var.wait(lock,
             [this]{ return queue.size() > 0; });
         
-        val = queue.front();
+        val = std::move(queue.front());
         queue.pop();
     }
 
-    void push(T const& val) {
-        std::unique_lock<std::mutex> lock(mutex);
-        auto const was_empty = queue.empty();
-        queue.push(val);
+    template<typename U>
+    void push(U&& val) {
+        auto const is_empty = [&]{
+            auto const lock = std::unique_lock(mutex);
+            auto const res = queue.empty();
 
-        lock.unlock();
+            queue.push(std::forward<U>(val));
 
-        if (was_empty)
-            cond_var.notify_one();
+            return res;
+        }();
+
+        if (is_empty) cond_var.notify_one();
     }
 
     private:

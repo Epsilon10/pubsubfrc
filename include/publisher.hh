@@ -18,7 +18,7 @@ class Publisher {
 
     void unsubscribe(Publisher* publisher);
 
-    void publish(Message* msg);
+    void publish(Message&& msg);
 
     void run_periodic();
 
@@ -26,10 +26,10 @@ class Publisher {
     std::string name;
     std::vector<Publisher*> sub_list;
     
-    MpscQueue<Message*> mailbox;
+    MpscQueue<Message> mailbox;
 
     std::thread thread;
     std::atomic<bool> is_running{true};
 
-    virtual void process_message(Message* message);
+    virtual void process_message(Message&& message);
 };

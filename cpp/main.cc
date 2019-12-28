@@ -34,38 +34,41 @@ int main() {
     Vec3 points[] = { Vec3(1.0f, 2.0f, 3.0f), Vec3(4.0f, 5.0f, 6.0f) };
     auto const path = builder.CreateVectorOfStructs(points, 2);
     */
+
+   const DrivetrainStatus* dt_msg_ptr;
+   Message my_m;
+   uint8_t* buf_ptr;
+
+   { 
    flatbuffers::FlatBufferBuilder builder{1024};
+   auto v = Pose2D(1.0,1.0,0.0);
+   auto x = Pose2D(1.0,10.8,1119.3);
 
-   DrivetrainStatusBuilder dt_status_builder{builder};
+    auto obj_ptr = CreateDrivetrainStatus(builder, &v, &x);
 
-    auto pos = Pose2D(1.0,3.0,0.0);
-    auto velocity = Pose2D(10.0, 3.7, 4.42);
-    dt_status_builder.add_pos(&pos);
-    dt_status_builder.add_velocity(&velocity);
+    builder.Finish(obj_ptr);
 
-    auto dt_status_msg = dt_status_builder.Finish();
-    builder.Finish(dt_status_msg);
+    Message m{"dtstatus"};
+    buf_ptr = builder.GetBufferPointer();
+    m.set_data(buf_ptr);
 
-    uint8_t* buf = builder.GetBufferPointer();
+    MpscQueue<Message> queue;
+    queue.push(std::move(m));
 
-    auto msg_ptr = GetDrivetrainStatus(buf);
+    queue.wait_and_pop(my_m);
+    
+    dt_msg_ptr = GetDrivetrainStatus(my_m.data);
 
-    auto x_pos = msg_ptr->velocity()->x();
-    std::cout << "X Pos: " << x_pos << std::endl;
+    std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
 
-    Message m;
-    m.set_topic("DrivetrainStatus");
-    m.set_data(buf);
+    builder.Clear();
+    std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
+    //free(buf_ptr);
+   }
+   std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
+    auto msg_ptr = GetDrivetrainStatus(buf_ptr);
+    std::cout << *buf_ptr << std::endl;
+    //delete[] buf_ptr;
 
-    MpscQueue<Message*> queue;
-
-    queue.push(&m);
-
-    Message* pop_m;
-    queue.wait_and_pop(pop_m);
-
-    auto pop_msg_ptr = GetDrivetrainStatus(pop_m->data);
-
-    auto x_pos_p = pop_msg_ptr->velocity()->x();
-    std::cout << "X vel: " << x_pos_p << std::endl;
+    
 }
