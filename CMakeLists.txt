@@ -9,7 +9,8 @@ project (pubsubfrc)
 
 set(SOURCES 
     cpp/main.cc
-
+    cpp/publisher.cc
+    cpp/dt_publisher.cc
 )
 
 add_executable(pubsubfrc ${SOURCES})

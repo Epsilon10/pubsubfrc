@@ -4,6 +4,8 @@
 #include <memory>
 
 
+#include "flatbuffers/flatbuffers.h"
+
 class Message {
     public:
     Message() = default;
@@ -14,9 +16,7 @@ class Message {
 
     Message& operator=(Message&& other) {
         data = std::move(other.data);
-        data = other.data;
-        other.data = nullptr;
-
+        topic = std::move(other.topic);
         return *this;
     }
 
@@ -24,10 +24,12 @@ class Message {
         this->topic = topic;
     }
 
-    void set_data(uint8_t* buf) {
-        data = buf;
+    void set_data(flatbuffers::DetachedBuffer&& buffer) {
+        data = std::move(buffer);
     }
 
+    const uint8_t* get_data() { return data.data(); }
+
     std::string topic;
-    uint8_t* data;
+    flatbuffers::DetachedBuffer data;
 };

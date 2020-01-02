@@ -3,6 +3,8 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <functional>
+#include <atomic>
 
 template<typename T>
 class MpscQueue {
@@ -10,14 +12,17 @@ class MpscQueue {
     MpscQueue() = default;
     MpscQueue(MpscQueue&&) = delete;
 
-    void wait_and_pop(T& val) {
+    bool wait_and_pop(T& val, std::atomic<bool>& is_running) {
         std::unique_lock<std::mutex> lock(mutex);
 
         cond_var.wait(lock,
-            [this]{ return queue.size() > 0; });
+            [this, &is_running]{ return queue.size() > 0 || !is_running; });
+
+        if (!is_running) return false;
         
         val = std::move(queue.front());
         queue.pop();
+        return true;
     }
 
     template<typename U>
@@ -32,6 +37,11 @@ class MpscQueue {
         }();
 
         if (is_empty) cond_var.notify_one();
+    }
+
+    void update() {
+        std::unique_lock<std::mutex> lock(mutex);
+        cond_var.notify_one();
     }
 
     private:

@@ -1,27 +1,43 @@
 #include "publisher.hh"
+#include "drivetrain_generated.h"
+#include <iostream>
 
-Publisher::Publisher(std::string name) : name(std::move(name)),
-    thread(&Publisher::run_periodic, this) { }
+Publisher::Publisher(std::string name) : name(std::move(name)) { }
 
-void Publisher::subscribe(Publisher* publisher) {
-    auto it =
-        std::find(publisher->sub_list.begin(), publisher->sub_list.end(), this);
-    if (it == publisher->sub_list.end())
-        publisher->sub_list.push_back(publisher);
+void Publisher::init() {
+    thread = std::thread(&Publisher::run_periodic, this);
+    // because the thread needs a virtual function, we can't have it in the ctor
 }
 
-void Publisher::unsubscribe(Publisher* publisher) {
+Publisher::~Publisher() {
+    is_running = false;
+    mailbox.update();
+    std::cout << "beg\n";
+    thread.join();
+    std::cout << "end\n";
+}
+
+void Publisher::subscribe(Publisher& publisher) {
     auto it =
-        std::find(publisher->sub_list.begin(), publisher->sub_list.end(), this);
-    if (it != publisher->sub_list.end())
-        publisher->sub_list.erase(it);
+        std::find(publisher.sub_list.begin(), publisher.sub_list.end(), this);
+    if (it == publisher.sub_list.end())
+        publisher.sub_list.push_back(this);
+}
+
+void Publisher::unsubscribe(Publisher& publisher) {
+    auto it =
+        std::find(publisher.sub_list.begin(), publisher.sub_list.end(), this);
+    if (it != publisher.sub_list.end())
+        publisher.sub_list.erase(it);
 }
 
 void Publisher::run_periodic() {
-    Message m;
-    mailbox.wait_and_pop(m);
+    while (is_running) {
+        Message m;
+        mailbox.wait_and_pop(m, is_running);
 
-    process_message(std::move(m));
+        process_message(std::move(m));
+    }
 }
 
 void Publisher::publish(Message&& msg) {
@@ -29,3 +45,5 @@ void Publisher::publish(Message&& msg) {
         sub->mailbox.push(std::move(msg));
     }
 }
+
+void Publisher::disable() { is_running = false; }

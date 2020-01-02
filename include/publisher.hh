@@ -13,14 +13,18 @@ class Publisher {
     public:
     Publisher() = default;
     Publisher(std::string name);
+    virtual ~Publisher();
+    void subscribe(Publisher& publisher);
 
-    void subscribe(Publisher* publisher);
-
-    void unsubscribe(Publisher* publisher);
+    void unsubscribe(Publisher& publisher);
 
     void publish(Message&& msg);
 
     void run_periodic();
+
+    void disable();
+
+    void init();
 
     private:
     std::string name;
@@ -31,5 +35,5 @@ class Publisher {
     std::thread thread;
     std::atomic<bool> is_running{true};
 
-    virtual void process_message(Message&& message);
+    virtual void process_message(Message&& message) = 0;
 };

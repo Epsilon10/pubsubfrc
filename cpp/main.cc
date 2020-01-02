@@ -9,66 +9,40 @@ using namespace Robot::Drivetrain;
 #include "mpsc_queue.hh"
 
 #include "message.hh"
+#include "publisher.hh"
+#include "dt_publisher.hh"
 
+#include <chrono>
+
+using Clock = std::chrono::high_resolution_clock;
 
 int main() {
-    /*
-
-    auto const weapon_one_name = builder.CreateString("Chad");
-    short weapon_one_dmg = 3;
-
-    auto const sword = CreateWeapon(builder, weapon_one_name, weapon_one_dmg);
     
-    std::cout << "success" << std::endl;
-
-    auto const name = builder.CreateString("Orc");
-
-    uint8_t treasure[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    auto const inventory = builder.CreateVector(treasure, 10);
-
-    std::vector<flatbuffers::Offset<Weapon>> weapons_vector;
-    weapons_vector.push_back(sword);
-
-    auto const weapons = builder.CreateVector(weapons_vector);
-
-    Vec3 points[] = { Vec3(1.0f, 2.0f, 3.0f), Vec3(4.0f, 5.0f, 6.0f) };
-    auto const path = builder.CreateVectorOfStructs(points, 2);
-    */
-
-   const DrivetrainStatus* dt_msg_ptr;
-   Message my_m;
-   uint8_t* buf_ptr;
-
-   { 
-   flatbuffers::FlatBufferBuilder builder{1024};
-   auto v = Pose2D(1.0,1.0,0.0);
-   auto x = Pose2D(1.0,10.8,1119.3);
-
-    auto obj_ptr = CreateDrivetrainStatus(builder, &v, &x);
-
-    builder.Finish(obj_ptr);
-
-    Message m{"dtstatus"};
-    buf_ptr = builder.GetBufferPointer();
-    m.set_data(buf_ptr);
-
-    MpscQueue<Message> queue;
-    queue.push(std::move(m));
-
-    queue.wait_and_pop(my_m);
-    
-    dt_msg_ptr = GetDrivetrainStatus(my_m.data);
-
-    std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
-
-    builder.Clear();
-    std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
-    //free(buf_ptr);
-   }
-   std::cout << dt_msg_ptr->velocity()->heading() << std::endl;
-    auto msg_ptr = GetDrivetrainStatus(buf_ptr);
-    std::cout << *buf_ptr << std::endl;
     //delete[] buf_ptr;
+    DrivetrainPublisher dt_1;
+    DrivetrainPublisher dt_2;
+    DrivetrainPublisher dt_3;
 
-    
+    dt_1.init();
+    dt_2.init();
+    dt_3.init();
+
+    dt_1.subscribe(dt_2);
+    dt_2.subscribe(dt_3);
+    dt_3.subscribe(dt_1);
+    dt_3.subscribe(dt_2);
+
+    Message m{"Hoesmade"};
+    flatbuffers::FlatBufferBuilder b{1024};
+    auto pos = Pose2D(1.0,2.0,3.0);
+    auto vel = Pose2D(1.0,3.0,28213.1);
+
+    auto x = CreateDrivetrainStatus(b, &pos, &vel);
+    b.Finish(x);
+    m.set_data(b.Release());
+
+    dt_1.publish(std::move(m));
+    std::cout << "thot\n";
+
+
 }
