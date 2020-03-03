@@ -6,6 +6,7 @@
 #include <functional>
 #include <atomic>
 
+#include <iostream>
 template<typename T>
 class MpscQueue {
     public:
@@ -16,23 +17,22 @@ class MpscQueue {
         std::unique_lock<std::mutex> lock(mutex);
 
         cond_var.wait(lock,
-            [this, &is_running]{ return queue.size() > 0 || !is_running; });
+            [this, &is_running]{ return !queue.empty() || !is_running; });    
 
-        if (!is_running) return false;
-        
+        if (!is_running) return false;    
+
         val = std::move(queue.front());
         queue.pop();
         return true;
     }
 
-    template<typename U>
-    void push(U&& val) {
+    void push(T val) {
         auto const is_empty = [&]{
             auto const lock = std::unique_lock(mutex);
             auto const res = queue.empty();
 
-            queue.push(std::forward<U>(val));
-
+            queue.push(std::move(val));
+            //std::cout << "pushed\n";
             return res;
         }();
 

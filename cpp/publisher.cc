@@ -12,9 +12,7 @@ void Publisher::init() {
 Publisher::~Publisher() {
     is_running = false;
     mailbox.update();
-    std::cout << "beg\n";
     thread.join();
-    std::cout << "end\n";
 }
 
 void Publisher::subscribe(Publisher& publisher) {
@@ -32,17 +30,26 @@ void Publisher::unsubscribe(Publisher& publisher) {
 }
 
 void Publisher::run_periodic() {
+
     while (is_running) {
         Message m;
-        mailbox.wait_and_pop(m, is_running);
+        
+        if (mailbox.wait_and_pop(m, is_running)) {
+            //std::cout << "in RP " << name << std::endl;
 
-        process_message(std::move(m));
+            auto x = Robot::Drivetrain::GetDrivetrainStatus(m.get_data());
+            // std::cout << "vel heading: " << x->velocity()->heading() << std::endl;
+            process_message(std::move(m));
+        }
+
+       // std::cout << "Hello from: " << name << std::endl;
+        
     }
 }
 
 void Publisher::publish(Message&& msg) {
     for (auto sub : sub_list) {
-        sub->mailbox.push(std::move(msg));
+        sub->mailbox.push(msg);
     }
 }
 

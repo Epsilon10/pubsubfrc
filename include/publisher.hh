@@ -26,8 +26,9 @@ class Publisher {
 
     void init();
 
-    private:
+    
     std::string name;
+    private:
     std::vector<Publisher*> sub_list;
     
     MpscQueue<Message> mailbox;
@@ -35,5 +36,5 @@ class Publisher {
     std::thread thread;
     std::atomic<bool> is_running{true};
 
-    virtual void process_message(Message&& message) = 0;
+    virtual void process_message(Message&& message) { std::cout << "virtual: " << name << std::endl; };
 };

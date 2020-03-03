@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <iostream>
 
 
 #include "flatbuffers/flatbuffers.h"
@@ -10,26 +11,29 @@ class Message {
     public:
     Message() = default;
     Message(std::string const& topic) : topic(topic) { }
-    Message(Message&& other) = default;
-    Message(Message const& other) = default;
+    Message(Message&& other) : topic(std::move(other.topic)), buffer_ptr(std::move(other.buffer_ptr)) {
+    }
+    Message(Message const& other) : topic(other.topic), buffer_ptr(other.buffer_ptr){
+        std::cout << "copy called!" << std::endl;
+    }
     ~Message() = default;
 
     Message& operator=(Message&& other) {
-        data = std::move(other.data);
+        buffer_ptr = std::move(other.buffer_ptr);
         topic = std::move(other.topic);
         return *this;
     }
 
-    void set_topic(std::string const& topic) {
-        this->topic = topic;
+    void set_topic(std::string new_topic) {
+        this->topic = std::move(new_topic);
     }
 
     void set_data(flatbuffers::DetachedBuffer&& buffer) {
-        data = std::move(buffer);
+        buffer_ptr = std::make_shared<flatbuffers::DetachedBuffer>(std::move(buffer));
     }
 
-    const uint8_t* get_data() { return data.data(); }
+    uint8_t const* get_data() { return buffer_ptr->data(); }
 
     std::string topic;
-    flatbuffers::DetachedBuffer data;
+    std::shared_ptr<flatbuffers::DetachedBuffer> buffer_ptr;
 };

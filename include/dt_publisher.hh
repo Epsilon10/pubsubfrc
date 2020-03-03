@@ -10,9 +10,10 @@ using namespace Robot::Drivetrain;
 
 class DrivetrainPublisher : public Publisher {
     public:
-    DrivetrainPublisher();
+    DrivetrainPublisher(std::string name);
     ~DrivetrainPublisher() = default;
     private:
     flatbuffers::FlatBufferBuilder msg_builder;
     void process_message(Message&& message) override;
+    
 };
